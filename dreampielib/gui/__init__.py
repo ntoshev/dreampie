@@ -109,7 +109,7 @@ from .subprocess_handler import SubprocessHandler, StartError
 from .common import beep, get_text, TimeoutError
 from .file_dialogs import save_dialog
 from .tags import (OUTPUT, STDIN, STDOUT, STDERR, EXCEPTION, PROMPT, COMMAND,
-                   COMMAND_DEFS, COMMAND_SEP, MESSAGE, RESULT_IND, RESULT)
+                   COMMAND_DEFS, COMMAND_SEP, MESSAGE, RESULT_IND, RESULT, CURRENT_TOKEN)
 from . import tags
 from .update_check import update_check
 from . import bug_report
@@ -363,6 +363,7 @@ class DreamPie(SimpleGladeApp):
         tv.connect('key-press-event', self.on_textview_keypress)
         tv.connect('focus-in-event', self.on_textview_focus_in)
 
+
     def get_char_width_height(self):
         tv = self.textview
         context = tv.get_pango_context()
@@ -400,10 +401,13 @@ class DreamPie(SimpleGladeApp):
 
     def create_sourcebufferview(self, page_num=None):
         sb = gtksourceview2.Buffer()
+        sb.connect('notify::cursor-position', self.on_sourceview_move_cursor)
+        sb.create_tag(CURRENT_TOKEN, background='dark blue')
         sv = gtksourceview2.View(sb)
         sv.show()
         sv.connect('focus-in-event', self.on_sourceview_focus_in)
         sv.connect('button-press-event', self.on_sourceview_button_press_event)
+
         _charwidth, charheight = self.get_char_width_height()
         self.configure_sourceview(sv)
 
@@ -445,6 +449,27 @@ class DreamPie(SimpleGladeApp):
             commands = self.selection.get_commands_only()
             self.sourcebuffer.insert_interactive_at_cursor(commands, True)
             return True
+
+    def on_sourceview_move_cursor(self, buffer, data=None):
+        if not buffer.props.has_selection:
+            sb = self.sourcebuffer
+            text = get_text(sb, sb.get_start_iter(), sb.get_end_iter())
+            index = sb.get_iter_at_mark(sb.get_insert()).get_offset()
+
+            sb.remove_tag_by_name(CURRENT_TOKEN, sb.get_start_iter(), sb.get_end_iter())
+            tokens = list(re.finditer('\w+', text))
+            current_token = None
+            for match in tokens:
+                if match.start() <= index <= match.end():
+                    current_token = text[match.start():match.end()]
+                    break
+            if sum(1 for match in tokens if text[match.start():match.end()] == current_token) > 1:
+                for match in tokens:
+                    if text[match.start():match.end()]==current_token:
+                        sb.apply_tag_by_name(CURRENT_TOKEN, \
+                                sb.get_iter_at_offset(match.start()), \
+                                sb.get_iter_at_offset(match.end()))
+            
     
     def write(self, data, *tag_names):
         self.textbuffer.insert_with_tags_by_name(

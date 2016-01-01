@@ -99,6 +99,9 @@ bracket-3-bg = black
 error-fg = white
 error-bg = red
 
+current-token-fg = white
+current-token-bg = darkred
+
 stdin-fg-set = False
 stdin-bg-set = False
 stdout-fg-set = True
@@ -139,6 +142,10 @@ bracket-3-fg-set = True
 bracket-3-bg-set = False
 error-fg-set = False
 error-bg-set = True
+
+current-token-fg-set = False
+current-token-bg-set = True
+
 
 [Light theme]
 is-active = True
@@ -187,6 +194,10 @@ bracket-3-bg = #a50000
 error-fg = black
 error-bg = red
 
+current-token-fg = white
+current-token-bg = darkred
+
+
 stdin-fg-set = False
 stdin-bg-set = False
 stdout-fg-set = True
@@ -227,6 +238,9 @@ bracket-3-fg-set = True
 bracket-3-bg-set = False
 error-fg-set = False
 error-bg-set = True
+
+current-token-fg-set = False
+current-token-bg-set = True
 
 """
 

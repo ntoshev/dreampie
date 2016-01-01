@@ -50,6 +50,8 @@ NUMBER = 'number'; COMMENT = 'comment'; BRACKET_MATCH = 'bracket-match'
 BRACKET_1 = 'bracket-1'; BRACKET_2 = 'bracket-2'; BRACKET_3 = 'bracket-3'
 ERROR = 'error'
 
+CURRENT_TOKEN = 'current-token'
+
 # Constants to retrieve data from a theme. A theme is just a dict which maps
 # tuples to strings, and is used like this: 
 # theme[KEYWORD, FG, COLOR], theme[COMMENT, BG, ISSET]
@@ -73,6 +75,8 @@ tag_desc = [
     (BRACKET_2, 'Bracket 2'),
     (BRACKET_3, 'Bracket 3'),
     (ERROR, 'Error'),
+
+    (CURRENT_TOKEN, 'Current Token'),
     
     (STDIN, 'Standard Input'),
     (STDOUT, 'Standard Output'),
@@ -287,6 +291,8 @@ def _get_style_scheme_spec(theme):
         'def:string': STRING,
         'def:number': NUMBER,
         'def:comment': COMMENT,
+
+        'current-token':CURRENT_TOKEN,
 
         'bracket-match': BRACKET_MATCH,
         'python:bracket-1': BRACKET_1,
