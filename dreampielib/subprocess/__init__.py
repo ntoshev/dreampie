@@ -70,17 +70,6 @@ import logging
 from logging import debug
 #logging.basicConfig(filename='/tmp/dreampie_subp_log', level=logging.DEBUG)
 
-def excepthook_nop(*args):
-    """
-    Replace python excepthook with this to avoid double traceback
-    printing. This way other modules which replace excepthook but still
-    call it will work correctly.
-    """
-    pass
-# Note that sys.excepthook might not be sys.__excepthook__ as e.g. on ubuntu
-# it's apport_excepthook we're replacing.
-sys.excepthook = excepthook_nop
-
 # time interval to process GUI events, in seconds
 GUI_SLEEP = 0.1
 
@@ -465,10 +454,6 @@ class Subprocess(object):
             is_success = False
             res_no = None
             res_str = None
-            try:
-                sys.excepthook(*excinfo)
-            except:
-                exception_string += 'Failed sys.excepthook: ' + trunc_traceback(sys.exc_info(), __file__)
         else:
             is_success = True
             exception_string = None
@@ -1002,39 +987,32 @@ class GIHandler(GuiHandler):
 class Qt4Handler(GuiHandler):
     def __init__(self):
         self.QtCore = None
-        self.app = None
 
     def handle_events(self, delay):
         if self.QtCore is None:
             if 'PyQt4' in sys.modules:
                 self.QtCore = sys.modules['PyQt4'].QtCore
+            elif 'PySide' in sys.modules:
+                self.QtCore = sys.modules['PySide'].QtCore
             else:
                 return False
         QtCore = self.QtCore
 
-        if self.app is None:
-            app = QtCore.QCoreApplication.instance()
-            if app:
-                self.app = app
-            else:
-                return False
+        app = QtCore.QCoreApplication.instance()
+        if app is None:
+            return False
 
+        # We create a new QCoreApplication to avoid quitting if modal dialogs
+        # are active. This approach was taken from IPython. See:
+        # https://github.com/ipython/ipython/blob/master/IPython/lib/inputhookqt4.py
+        app.processEvents(QtCore.QEventLoop.AllEvents, delay*1000)
         timer = QtCore.QTimer()
-        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'),
-                               self.qt4_quit_if_no_modal)
+        event_loop = QtCore.QEventLoop()
+        timer.timeout.connect(event_loop.quit)
         timer.start(delay*1000)
-        with user_code():
-            self.app.exec_()
-        timer.stop()
-        QtCore.QObject.disconnect(timer, QtCore.SIGNAL('timeout()'),
-                                  self.qt4_quit_if_no_modal)
+        event_loop.exec_()
+        timer.stop()        
         return True
-
-    def qt4_quit_if_no_modal(self):
-        app = self.app
-        if app.__class__.__name__ != 'QApplication' or \
-           app.activeModalWidget() is None:
-            app.quit()
 
 class TkHandler(GuiHandler):
     def __init__(self):
